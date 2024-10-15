@@ -1,17 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"go-project/initializer"
-	"os"
+	"log"
+	"net/http"
 )
 
-func init(){
+var port string
+
+func init() {
 	initializer.LoadEnvVariables()
+	initializer.ConnectToDB()
+	port = initializer.GetAppPort()
 }
 
 func main() {
-	port := os.Getenv("APP_PORT")
-
-	fmt.Println("Port is : ", port)
+	if err := http.ListenAndServe(port, nil); err != nil {
+		log.Fatal(err)
+	}
 }

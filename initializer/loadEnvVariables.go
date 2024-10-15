@@ -62,7 +62,7 @@ func readEnvFile(file *os.File) (map[string]string, error) {
 	scanner := bufio.NewScanner(file)
 	envMap := make(map[string]string)
 	for scanner.Scan() {
-		fmt.Println("File reading!")
+		// fmt.Println("File reading!")
 		line := scanner.Text()
 
 		if len(line) == 0 || strings.HasPrefix(line, "#") {
@@ -73,7 +73,7 @@ func readEnvFile(file *os.File) (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("key and value extracted successfully!")
+		// fmt.Println("key and value extracted successfully!")
 
 		envMap[key] = value
 	}
