@@ -12,8 +12,8 @@ var Db *sql.DB
 func ConnectToDB() {
 	dbUrl := getDbUrl()
 	// fmt.Println("DB URL : ", dbUrl)
-
-	Db, err := sql.Open("postgres", dbUrl)
+	var err error
+	Db, err = sql.Open("postgres", dbUrl)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
@@ -26,6 +26,9 @@ func ConnectToDB() {
 
 }
 
+func CloseDb(){
+	Db.Close()
+}
 func getDbUrl() string {
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
