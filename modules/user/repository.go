@@ -10,6 +10,7 @@ import (
 type Repository interface {
 	Create(user *models.User) (*models.User, error)
 	Get(id int) (*models.User, error)
+	GetByEmail(email string) (*models.User, error)
 	Delete(id int) (*models.User, error)
 	GetAll() ([]models.User, error)
 	DeleteAll() ([]models.User, error)
@@ -25,17 +26,38 @@ func NewRepository(db *sql.DB) Repository {
 	return &repository{db: db}
 }
 
+func (r *repository) GetByEmail(email string) (*models.User, error) {
+	query := `SELECT id, name, email, password 
+				FROM users 
+				WHERE email = $1`
+
+	var user models.User
+
+	err := r.db.QueryRow(
+		query, email,
+	).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Password,
+	)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (r *repository) PatchUser(userUpdates *models.User) (*models.User, error) {
 	if userUpdates.ID == 0 {
 		return nil, errors.New("user ID required")
 	}
 
-	// Dynamically build the update query
 	query := `UPDATE users SET `
 	var params []interface{}
 	paramCount := 1
 
-	// Dynamically build the update query and parameters
 	if userUpdates.Email != "" {
 		query += fmt.Sprintf(" email = $%d,", paramCount)
 		params = append(params, userUpdates.Email)
@@ -51,15 +73,13 @@ func (r *repository) PatchUser(userUpdates *models.User) (*models.User, error) {
 		params = append(params, userUpdates.Password)
 	}
 
-	// Remove the trailing comma and add the WHERE clause
 	if len(params) == 0 {
 		return nil, errors.New("no user fields to update")
 	}
-	query = query[:len(query)-1] // Remove the last comma
+	query = query[:len(query)-1]
 	query += fmt.Sprintf(" WHERE id = $%d", paramCount)
 	params = append(params, userUpdates.ID)
 
-	// Execute the query
 	result, err := r.db.Exec(query, params...)
 	if err != nil {
 		return nil, err

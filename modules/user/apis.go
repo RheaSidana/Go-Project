@@ -11,6 +11,8 @@ func Apis() {
 
 	http.HandleFunc("/users/", UserHandlerForGetOrDeleteOrPutOrPatch)
 	http.HandleFunc("/users", UserHandlerForPostOrGetAllOrDeleteAll)
+	http.HandleFunc("/user/signup", userHandler.SignUpHandler)
+	http.HandleFunc("/user/login", userHandler.LoginHandler)
 }
 
 func UserHandlerForPostOrGetAllOrDeleteAll(w http.ResponseWriter, r *http.Request) {

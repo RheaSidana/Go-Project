@@ -2,8 +2,7 @@ package user
 
 import (
 	"encoding/json"
-	"fmt"
-	// "fmt"
+
 	models "go-project/models"
 	"net/http"
 	"strconv"
@@ -24,12 +23,10 @@ func (h *Handler) PatchUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	updatedUser, err := h.repository.PatchUser(&userUpdates)
 	if err != nil {
-		fmt.Println("err: ", err)
 		http.Error(w, "Error patching user", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Println("updated user: ", *updatedUser)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(Response{
 		User: *updatedUser,
@@ -112,8 +109,60 @@ func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var newUser models.User
+	err := json.NewDecoder(r.Body).Decode(&newUser)
+	if err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.repository.GetByEmail(newUser.Email)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	err = isEncryptedPassword(user.Password, newUser.Password)
+	if err != nil {
+		http.Error(w, "invalid password provided", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Response{
+		User: *user,
+		Message: "user logged in successfully",
+	})
+}
+
+func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
+	var newUser models.User
+	err := json.NewDecoder(r.Body).Decode(&newUser)
+	if err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	encryptPassword, err := hashPassword(newUser.Password)
+	if err != nil {
+		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		return
+	}
+
+	newUser.Password = encryptPassword
+
+	createdUser, err := h.repository.Create(&newUser)
+	if err != nil {
+		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(createdUser)
+}
+
 func (h *Handler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	// fmt.Println("url: ", r.URL)
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) != 3 {
 		http.Error(w, "Invalid URL format. Expected /users/{id}", http.StatusBadRequest)
